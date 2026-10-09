@@ -1,0 +1,215 @@
+LCD I²C pin
+
+	
+
+Arduino Uno
+
+
+
+
+GND
+
+	
+
+GND
+
+
+
+
+VCC
+
+	
+
+5V
+
+
+
+
+SDA
+
+	
+
+A4
+
+
+
+
+SCL
+
+	
+
+A5
+
+Keep your existing LDR connections:
+
+LDR module
+
+	
+
+Receiver Arduino
+
+
+
+
+VCC
+
+	
+
+5V
+
+
+
+
+GND
+
+	
+
+GND
+
+
+
+
+DO
+
+	
+
+D2
+
+
+
+
+AO
+
+	
+
+A0 (optional)
+
+Both modules can share the Arduino's 5V and GND connections.
+
+2. Complete receiver code with LCD
+
+Install the LiquidCrystal I2C library from Arduino IDE's Library Manager before uploading this code.
+
+This version:
+
+Receives data from the LDR module's DO pin on D2.
+
+Displays the received message on the 16×2 LCD.
+
+Also prints the message in Serial Monitor.
+
+Shows a startup message on the LCD.
+
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Most I2C LCDs use 0x27.
+// If yours does not work, check whether it uses 0x3F.
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+const int SENSOR_PIN = 2;
+const unsigned int BIT_TIME = 250;
+
+// Set LOW if the module's DO output is LOW
+// when the LED shines on the LDR.
+// Otherwise, change to HIGH.
+const int LIGHT_ON_LEVEL = LOW;
+
+String receivedMessage = "";
+
+bool lightDetected() {
+  return digitalRead(SENSOR_PIN) == LIGHT_ON_LEVEL;
+}
+
+void showMessage() {
+  lcd.setCursor(0, 1);
+
+  // Show the latest 16 characters
+  int start = 0;
+  if (receivedMessage.length() > 16) {
+    start = receivedMessage.length() - 16;
+  }
+
+  String displayText = receivedMessage.substring(start);
+  lcd.print(displayText);
+
+  // Clear leftover characters from previous text
+  for (int i = displayText.length(); i < 16; i++) {
+    lcd.print(' ');
+  }
+}
+
+void setup() {
+  pinMode(SENSOR_PIN, INPUT);
+  Serial.begin(115200);
+
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+
+  lcd.setCursor(0, 0);
+  lcd.print("LI-FI RECEIVER");
+  lcd.setCursor(0, 1);
+  lcd.print("Waiting message");
+
+  delay(2000);
+  lcd.clear();
+
+  lcd.setCursor(0, 0);
+  lcd.print("Received text:");
+
+  Serial.println("Li-Fi LCD receiver ready.");
+}
+
+void loop() {
+  // Start bit: LED OFF
+  if (!lightDetected()) {
+    delay(BIT_TIME / 2);
+
+    // Confirm the start bit
+    if (!lightDetected()) {
+      byte received = 0;
+
+      // Read 8 data bits, LSB first
+      for (int i = 0; i < 8; i++) {
+        delay(BIT_TIME);
+
+        if (lightDetected()) {
+          received |= (1U << i);
+        }
+      }
+
+      // Check stop bit: LED ON
+      delay(BIT_TIME);
+
+      if (lightDetected()) {
+        if (received >= 32 && received <= 126) {
+          char c = (char)received;
+
+          receivedMessage += c;
+          Serial.write(c);
+          showMessage();
+        }
+      }
+    }
+  }
+}
+3. How it will look
+
+LI-FI RECEIVER  
+HELLO FROM LIFI  
+
+Example LCD output after receiving a message
+
+4. If the LCD doesn't display anything
+
+Check SDA → A4 and SCL → A5.
+
+Adjust the small contrast potentiometer on the LCD backpack.
+
+If the backlight works but no text appears, change 0x27 to 0x3F and upload again.
+
+If the text is corrupted, try BIT_TIME = 400 in both the transmitter and receiver programs. The value must match.
+
+Important: Keep the transmitter code unchanged. Only replace the receiver code with the LCD version above. Because an LDR responds slowly, this low-speed communication method may need additional tuning to receive every character correctly.
