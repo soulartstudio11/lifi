@@ -1,0 +1,132 @@
+Here are the final two Arduino Uno codes for your Li-Fi school electronics project. The transmitter sends text using an LED, and the receiver reads the light pulses through your LDR module's DO pin.
+
+1. Transmitter code — Arduino Uno #1
+
+Connection: D9 → 220 Ω resistor → LED (+), LED (−) → GND
+
+
+const int LED_PIN = 9;
+const unsigned int BIT_TIME = 250;
+
+void sendBit(bool bitValue) {
+  digitalWrite(LED_PIN, bitValue ? HIGH : LOW);
+  delay(BIT_TIME);
+}
+
+void sendCharacter(byte c) {
+  // Start bit: LED OFF
+  sendBit(false);
+
+  // Send 8 data bits, least-significant bit first
+  for (int i = 0; i < 8; i++) {
+    sendBit((c >> i) & 1);
+  }
+
+  // Stop bit: LED ON
+  sendBit(true);
+}
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
+
+  Serial.begin(115200);
+  Serial.setTimeout(30000);
+
+  Serial.println("LI-FI TRANSMITTER READY");
+  Serial.println("Type a message and press Enter.");
+}
+
+void loop() {
+  if (Serial.available()) {
+    String message = Serial.readStringUntil('\n');
+    message.trim();
+
+    if (message.length() > 0) {
+      Serial.print("Sending: ");
+      Serial.println(message);
+
+      for (unsigned int i = 0; i < message.length(); i++) {
+        sendCharacter((byte)message[i]);
+      }
+
+      digitalWrite(LED_PIN, HIGH);
+      Serial.println("Transmission complete.");
+    }
+  }
+}
+2. Receiver code — Arduino Uno #2
+
+Connections: LDR VCC → 5V, GND → GND, DO → D2, AO → A0 (optional)
+
+
+const int SENSOR_PIN = 2;
+const int ANALOG_PIN = A0;
+const unsigned int BIT_TIME = 250;
+
+// Many LDR modules output LOW when illuminated.
+// Change to HIGH if your module behaves oppositely.
+const int LIGHT_ON_LEVEL = LOW;
+
+bool lightDetected() {
+  return digitalRead(SENSOR_PIN) == LIGHT_ON_LEVEL;
+}
+
+void setup() {
+  pinMode(SENSOR_PIN, INPUT);
+  Serial.begin(115200);
+
+  Serial.println("LI-FI RECEIVER READY");
+  Serial.println("Point the LED at the LDR.");
+}
+
+void loop() {
+  // Start bit: LED OFF
+  if (!lightDetected()) {
+    delay(BIT_TIME / 2);
+
+    // Confirm the start bit
+    if (!lightDetected()) {
+      byte received = 0;
+
+      // Read 8 data bits
+      for (int i = 0; i < 8; i++) {
+        delay(BIT_TIME);
+
+        if (lightDetected()) {
+          received |= (1U << i);
+        }
+      }
+
+      // Check stop bit
+      delay(BIT_TIME);
+
+      if (lightDetected()) {
+        if (received >= 32 && received <= 126) {
+          Serial.write(received);
+        } else {
+          Serial.print('?');
+        }
+      }
+    }
+  }
+}
+3. How to run the project
+
+Connect the first Arduino Uno to your computer and upload the transmitter code.
+
+Connect the second Uno and upload the receiver code.
+
+Open the receiver's Serial Monitor at 115200 baud.
+
+Open the transmitter's Serial Monitor at 115200 baud.
+
+Set the transmitter Serial Monitor line ending to Newline.
+
+Point the LED at the LDR from approximately 2–5 cm away.
+
+Type HELLO in the transmitter's Serial Monitor and press Enter.
+
+The receiver should display the transmitted text.
+
+Troubleshooting: If characters are missing or corrupted, change BIT_TIME from 250 to 400 in both programs and recalibrate the LDR module's potentiometer. Because LDRs respond slowly, this simple protocol may still be unreliable; a photodiode would be better for faster transmission.

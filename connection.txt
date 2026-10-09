@@ -1,0 +1,120 @@
+Final Li-Fi Project Connections — Arduino Uno + LDR Module
+
+Your project uses two Arduino Uno boards: one transmits text using an LED, and the other receives it using an LDR module with AO and DO pins.
+
+1. Transmitter circuit
+
+Transmitter component
+
+	
+
+Connect to
+
+
+
+
+Arduino Uno D9
+
+	
+
+220 Ω resistor
+
+
+
+
+Other end of resistor
+
+	
+
+LED long leg (+)
+
+
+
+
+LED short leg (−)
+
+	
+
+Arduino GND
+
+2. Receiver circuit
+
+LDR module pin
+
+	
+
+Receiver Arduino Uno
+
+
+
+
+VCC
+
+	
+
+5V
+
+
+
+
+GND
+
+	
+
+GND
+
+
+
+
+DO (digital output)
+
+	
+
+D2
+
+
+
+
+AO (analog output)
+
+	
+
+A0 (optional)
+
+Adjust the small potentiometer on the LDR module until its digital output responds to the LED turning ON and OFF.
+
+3. Complete system layout
+
+Transmitter Arduino Uno
+
+USB → Computer → Serial Monitor
+
+D9 → 220 Ω → LED → GND
+
+Light carries the data
+
+No wire between the LED and LDR
+
+LDR module → Receiver Arduino Uno
+
+DO → D2 · AO → A0 (optional)
+
+USB → Computer → Serial Monitor
+
+Displays the received text
+
+4. Before switching on
+
+Use a separate USB connection to power each Arduino.
+
+Do not connect the two Arduino boards' GPIO pins together.
+
+Aim the LED directly at the LDR, initially about 2–5 cm away.
+
+Use the transmitter and receiver code from the previous message, with BIT_TIME = 250 in both programs.
+
+If the received text is incorrect, adjust the LDR potentiometer and check whether DO goes LOW or HIGH when illuminated. Set LIGHT_ON_LEVEL accordingly in the receiver code.
+
+Note: The LDR is slow, so this is a low-speed educational demonstration rather than a high-speed internet Li-Fi system.
+
+Files, images, and data analysis are unavailable until usage resets at 12:00 PM. Continue chatting with text only, or upgrade for more access.
